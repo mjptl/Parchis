@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parchis — Never type a purchase bill again</title>
+  <meta name="description" content="Parchis reads purchase bills from WhatsApp, email and paper, checks GSTIN, tax and GSTR-2B, and syncs clean entries into Tally and other accounting software.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,100&family=Instrument+Sans:wght@400;500;600&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Shared brush texture and marks -->
+  <svg class="defs" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="brush" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="4" result="warp" />
+        <feDisplacementMap in="SourceGraphic" in2="warp" scale="12" xChannelSelector="R" yChannelSelector="G" result="rough" />
+        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.16" numOctaves="2" seed="9" result="grain" />
+        <feColorMatrix in="grain" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -14 10.2" result="dry" />
+        <feComposite in="rough" in2="dry" operator="in" />
+      </filter>
+      <symbol id="i-whatsapp" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" /></symbol>
+      <symbol id="i-gmail" viewBox="0 0 24 24"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" /></symbol>
+      <symbol id="i-telegram" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" /></symbol>
+      <symbol id="i-googledrive" viewBox="0 0 24 24"><path d="M12.01 1.485c-2.082 0-3.754.02-3.743.047.01.02 1.708 3.001 3.774 6.62l3.76 6.574h3.76c2.081 0 3.753-.02 3.742-.047-.005-.02-1.708-3.001-3.775-6.62l-3.76-6.574zm-4.76 1.73a789.828 789.861 0 0 0-3.63 6.319L0 15.868l1.89 3.298 1.885 3.297 3.62-6.335 3.618-6.33-1.88-3.287C8.1 4.704 7.255 3.22 7.25 3.214zm2.259 12.653-.203.348c-.114.198-.96 1.672-1.88 3.287a423.93 423.948 0 0 1-1.698 2.97c-.01.026 3.24.042 7.222.042h7.244l1.796-3.157c.992-1.734 1.85-3.23 1.906-3.323l.104-.167h-7.249z" /></symbol>
+      <symbol id="i-paper" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" d="M5 2.5h14v19l-2.3-1.6-2.4 1.6-2.3-1.6-2.3 1.6-2.4-1.6L5 21.5z M8.5 7.5h7 M8.5 11h7 M8.5 14.5h4" /></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 15V4 M7.5 8.5 12 4l4.5 4.5 M4.5 15v3.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V15" /></symbol>
+      <symbol id="w-ca" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" /><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" /><path d="M9 7.5h6M9 11h6M9 14.5h3" /></g></symbol>
+      <symbol id="w-truck" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h11v10h-11z" /><path d="M13.5 9.5h4l3 3.2V16h-7" /><circle cx="6.5" cy="17.5" r="1.8" /><circle cx="17" cy="17.5" r="1.8" /></g></symbol>
+      <symbol id="w-food" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10" /><path d="M17.5 21V3c-2.2 1.2-3.5 3.8-3.5 7v3h3.5" /></g></symbol>
+      <symbol id="w-clinic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4" /><path d="M12 8v8M8 12h8" /></g></symbol>
+      <symbol id="w-build" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 17.5h17" /><path d="M5.5 17.5v-3a6.5 6.5 0 0 1 13 0v3" /><path d="M10 8.3V6h4v2.3" /><path d="M12 8v3.5" /></g></symbol>
+      <symbol id="i-zoho" viewBox="0 0 24 24"><path d="M8.66 6.897a1.299 1.299 0 0 0-1.205.765l-.642 1.44-.062-.385A1.291 1.291 0 0 0 5.27 7.648l-4.185.678A1.291 1.291 0 0 0 .016 9.807l.678 4.18a1.293 1.293 0 0 0 1.27 1.087c.074 0 .143-.01.216-.017l4.18-.678c.436-.07.784-.351.96-.723l2.933 1.307a1.304 1.304 0 0 0 .988.026c.321-.12.575-.365.716-.678l.28-.629.038.276a1.297 1.297 0 0 0 1.455 1.103l3.712-.501a1.29 1.29 0 0 0 1.03.514h4.236c.713 0 1.29-.58 1.291-1.291V9.545c0-.712-.58-1.291-1.291-1.291h-4.236c-.079 0-.155.008-.23.022a1.309 1.309 0 0 0-.275-.288c-.275-.21-.614-.3-.958-.253l-4.197.571c-.155.021-.3.07-.432.14L9.159 7.01a1.27 1.27 0 0 0-.499-.113zm-.025.705c.077 0 .159.013.24.052l2.971 1.324c-.128.238-.18.508-.142.782l.357 2.596h.002l-.745 1.672a.59.59 0 0 1-.777.296l-3.107-1.385-.004-.041-.41-2.526L8.1 7.95a.589.589 0 0 1 .536-.348zm-3.159.733c.125 0 .245.039.343.112.13.09.21.227.237.382l.234 1.446-.56 1.259a1.27 1.27 0 0 0-.026.987c.12.322.364.575.678.717l.295.131a.585.585 0 0 1-.428.314l-4.185.678a.59.59 0 0 1-.674-.485l-.678-4.18a.588.588 0 0 1 .485-.674l4.185-.678c.03-.004.064-.01.094-.01zm11.705.09a.59.59 0 0 1 .415.173 1.287 1.287 0 0 0-.416.947v4.237c0 .033.003.065.005.097l-3.55.482a.586.586 0 0 1-.66-.502l-.191-1.403.899-2.017a1.29 1.29 0 0 0-.333-1.5l3.754-.51c.026-.004.051-.004.077-.004zm1.3.532h4.227c.326 0 .588.266.588.588v4.237a.589.589 0 0 1-.588.588h-4.237a.564.564 0 0 1-.12-.013c.47-.246.758-.765.684-1.318zm-5.988.309.254.113c.296.133.43.48.296.777l-.432.97-.207-1.465a.58.58 0 0 1 .09-.395zm5.39.538.453 3.325a.583.583 0 0 1-.453.65zM6.496 11.545l.17 1.052a.588.588 0 0 1-.293-.776zm3.985 4.344a.588.588 0 0 0-.612.603c0 .358.244.61.601.61a.582.582 0 0 0 .607-.608c0-.35-.242-.605-.596-.605zm5.545 0a.588.588 0 0 0-.612.603c0 .358.245.61.602.61a.582.582 0 0 0 .606-.608c0-.35-.24-.605-.596-.605zm-8.537.018a.047.047 0 0 0-.048.047v.085c0 .026.021.047.048.047h.52l-.623.9a.052.052 0 0 0-.009.027v.027c0 .026.021.047.048.047h.815a.047.047 0 0 0 .047-.047v-.085a.047.047 0 0 0-.047-.047h-.55l.606-.9a.05.05 0 0 0 .008-.026v-.028a.047.047 0 0 0-.047-.047zm5.303 0a.047.047 0 0 0-.047.047v1.086c0 .026.02.047.047.047h.135a.047.047 0 0 0 .047-.047v-.454h.545v.454c0 .026.02.047.047.047h.134a.047.047 0 0 0 .047-.047v-1.086a.047.047 0 0 0-.047-.047h-.134a.047.047 0 0 0-.047.047v.453h-.545v-.453a.047.047 0 0 0-.047-.047zm-2.324.164c.25 0 .372.194.372.425 0 .219-.109.425-.358.426-.242 0-.375-.197-.375-.419 0-.235.108-.432.36-.432zm5.545 0c.25 0 .372.194.372.425 0 .219-.108.425-.358.426-.242 0-.374-.197-.374-.419 0-.235.108-.432.36-.432z" /></symbol>
+      <symbol id="i-googlesheets" viewBox="0 0 24 24"><path d="M11.318 12.545H7.91v-1.909h3.41v1.91zM14.728 0v6h6l-6-6zm1.363 10.636h-3.41v1.91h3.41v-1.91zm0 3.273h-3.41v1.91h3.41v-1.91zM20.727 6.5v15.864c0 .904-.732 1.636-1.636 1.636H4.909a1.636 1.636 0 0 1-1.636-1.636V1.636C3.273.732 4.005 0 4.909 0h9.318v6.5h6.5zm-3.273 2.773H6.545v7.909h10.91v-7.91zm-6.136 4.636H7.91v1.91h3.41v-1.91z" /></symbol>
+      <symbol id="i-sap" viewBox="0 0 24 24"><path d="M0 6.064v11.872h12.13L24 6.064zm3.264 2.208h.005c.863.001 1.915.245 2.676.633l-.82 1.43c-.835-.404-1.255-.442-1.73-.467-.708-.038-1.064.215-1.069.488-.007.332.669.633 1.305.838.964.306 2.19.715 2.377 1.9L7.77 8.437h2.046l2.064 5.576-.007-5.575h2.37c2.257 0 3.318.764 3.318 2.519 0 1.575-1.09 2.514-2.936 2.514h-.763l-.01 2.094-3.588-.003-.25-.908c-.37.122-.787.189-1.23.189-.456 0-.885-.071-1.263-.2l-.358.919-2 .006.09-.462c-.029.025-.057.05-.087.074-.535.43-1.208.629-2.037.644l-.213.002a5.075 5.075 0 0 1-2.581-.675l.73-1.448c.79.467 1.286.572 1.956.558.347-.007.598-.07.761-.239a.557.557 0 0 0 .156-.369c.007-.376-.53-.553-1.185-.756-.531-.164-1.135-.389-1.606-.735-.559-.41-.825-.924-.812-1.65a1.99 1.99 0 0 1 .566-1.377c.519-.537 1.357-.863 2.363-.863zm10.597 1.67v1.904h.521c.694 0 1.247-.23 1.248-.964 0-.709-.554-.94-1.248-.94zm-5.087.767l-.748 2.362c.223.085.481.133.757.133.268 0 .52-.047.742-.126l-.736-2.37z" /></symbol>
+      <symbol id="ast" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round">
+          <path d="M12 2.5 V21.5" /><path d="M3.8 7.2 L20.2 16.8" /><path d="M3.8 16.8 L20.2 7.2" />
+        </g>
+      </symbol>
+    </defs>
+  </svg>
+
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" data-nav>
+    <div class="wrap nav__inner">
+      <a class="logo" href="#top" aria-label="Parchis home" translate="no">
+        <svg class="logo__mark" aria-hidden="true"><use href="#ast" /></svg>Parchis
+      </a>
+      <nav aria-label="Main">
+        <ul class="nav__links">
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#checks">Checks</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </nav>
+      <a class="nav__cta" href="#trial">Try 20 bills free</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero" id="top">
+      <div class="wrap hero__copy">
+        <h1 class="display hero__title" data-split>Never type a purchase bill again.</h1>
+        <svg class="marker" viewBox="0 0 420 22" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M4 15 C 90 6, 200 4, 300 9 S 400 14, 416 8" />
+        </svg>
+        <p class="lede">WhatsApp photos, email PDFs, paper slips. Parchis collects every purchase bill, checks the GSTIN and tax, and enters it into Tally or your accounting software for you.</p>
+        <div class="hero__cta">
+          <a class="btn" href="#trial">Send us 20 bills, free</a>
+          <p class="caption">No card, no setup.<br>Ready entries back in a day.</p>
+        </div>
+      </div>
+
+      <div class="stage">
+        <svg class="ribbon" viewBox="0 0 1440 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <path d="M -60 330 C 120 345, 230 320, 300 262 C 365 210, 372 112, 300 104 C 228 96, 214 196, 282 262 C 350 326, 520 336, 720 322 C 920 308, 1090 326, 1158 262 C 1226 198, 1212 96, 1140 104 C 1068 112, 1075 210, 1140 262 C 1210 320, 1320 345, 1500 330" />
+        </svg>
+        <div class="wrap">
+          <div class="demo" role="img" aria-label="Example: a WhatsApp bill photo turned into a checked purchase entry">
+            <div class="slip" data-demo="slip">
+              <div class="slip__src"><svg class="ico ico--wa" aria-hidden="true"><use href="#i-whatsapp" /></svg>Shree Pharma Agencies sent a photo</div>
+              <div class="slip__paper">
+                <p class="slip__head">SHREE PHARMA AGENCIES</p>
+                <p class="slip__meta">GSTIN 24AABCS1429B1Z0<br>Inv. SPA/2425/0871 · 04-10-2026</p>
+                <table class="slip__table">
+                  <tr><th>Item</th><th>Amt</th></tr>
+                  <tr><td>Paracetamol 650 ×10</td><td>6,400.00</td></tr>
+                  <tr><td>Azithro 500 ×3</td><td>7,830.00</td></tr>
+                  <tr><td>ORS sachet ×200</td><td>2,500.00</td></tr>
+                  <tr><td>CGST 6% + SGST 6%</td><td>2,007.60</td></tr>
+                </table>
+                <p class="slip__total">Total ₹18,737.60</p>
+              </div>
+            </div>
+
+            <div class="entry" data-demo="entry">
+              <div class="entry__top">
+                <span>Purchase entry</span>
+                <span class="pill pill--ok" data-demo="status">Ready for Tally</span>
+              </div>
+              <dl class="entry__fields">
+                <div class="f" data-demo="f"><dt>Supplier</dt><dd>Shree Pharma Agencies</dd></div>
+                <div class="f" data-demo="f"><dt>GSTIN</dt><dd>24AABCS1429B1Z0 <i class="ok">Valid</i></dd></div>
+                <div class="f" data-demo="f"><dt>Invoice</dt><dd>SPA/2425/0871 · 04 Oct 2026</dd></div>
+                <div class="f" data-demo="f"><dt>Line items</dt><dd>3 items · HSN 3004</dd></div>
+                <div class="f f--flag" data-demo="f"><dt>Batch / expiry</dt><dd>AZ2291 · 08/27 <i class="flag">Check</i></dd></div>
+                <div class="f" data-demo="f"><dt>CGST + SGST</dt><dd>₹1,003.80 + ₹1,003.80 <i class="ok">Adds up</i></dd></div>
+                <div class="f" data-demo="f"><dt>GSTR-2B</dt><dd>Matched <i class="ok">Claimable</i></dd></div>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="syncs" data-syncs>
+        <div class="wrap">
+          <p class="syncs__line display">Your entries land straight in <span class="roll" aria-hidden="true"><span class="roll__word" data-roll>Tally Prime</span></span><span class="sr-only">Tally Prime, Busy, Zoho Books, Marg ERP, Vyapar, SAP Business One, Excel or Google Sheets</span></p>
+          <ul class="syncs__tiles" translate="no">
+            <li class="is-on"><span class="mono">T</span><span>Tally Prime</span></li>
+            <li><span class="mono">B</span><span>Busy</span></li>
+            <li><svg class="ico" aria-hidden="true"><use href="#i-zoho" /></svg><span>Zoho Books</span></li>
+            <li><span class="mono">M</span><span>Marg ERP</span></li>
+            <li><span class="mono">V</span><span>Vyapar</span></li>
+            <li><svg class="ico" aria-hidden="true"><use href="#i-sap" /></svg><span>SAP Business One</span></li>
+            <li><span class="mono">X</span><span>Excel</span></li>
+            <li><svg class="ico" aria-hidden="true"><use href="#i-googlesheets" /></svg><span>Google Sheets</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Problem -->
+    <section class="section problem" id="why">
+      <svg class="leaves" viewBox="0 0 200 200" aria-hidden="true">
+        <g filter="url(#brush)">
+          <ellipse cx="60" cy="40" rx="20" ry="6" transform="rotate(-12 60 40)" />
+          <ellipse cx="112" cy="26" rx="18" ry="6" transform="rotate(18 112 26)" />
+          <ellipse cx="34" cy="78" rx="18" ry="6" transform="rotate(-28 34 78)" />
+          <ellipse cx="86" cy="72" rx="20" ry="6" transform="rotate(-8 86 72)" />
+          <ellipse cx="140" cy="62" rx="18" ry="6" transform="rotate(36 140 62)" />
+          <ellipse cx="120" cy="104" rx="18" ry="6" transform="rotate(20 120 104)" />
+          <ellipse cx="166" cy="96" rx="17" ry="6" transform="rotate(62 166 96)" />
+          <ellipse cx="150" cy="138" rx="17" ry="6" transform="rotate(48 150 138)" />
+          <ellipse cx="178" cy="150" rx="16" ry="6" transform="rotate(78 178 150)" />
+          <ellipse cx="172" cy="188" rx="15" ry="6" transform="rotate(88 172 188)" />
+        </g>
+      </svg>
+      <div class="wrap problem__grid">
+        <div class="problem__copy">
+          <h2 class="display h2">Bills arrive from everywhere. Someone types every one.</h2>
+
+        <div class="points points--stack">
+          <p class="point"><svg aria-hidden="true"><use href="#ast" /></svg>At 3 to 5 minutes a bill, 600 bills a month is about 40 hours of an accountant's typing.</p>
+          <p class="point"><svg aria-hidden="true"><use href="#ast" /></svg>One wrong GSTIN or tax amount won't match GSTR-2B, and the input tax credit is lost.</p>
+        </div>
+        </div>
+        <div class="bills" aria-label="Five example bills, each arriving through a different channel">
+          <!-- WhatsApp: a phone photo inside a chat -->
+          <article class="bill bill--wa" tabindex="0">
+            <header class="bill__src"><svg class="ico ico--wa" aria-hidden="true"><use href="#i-whatsapp" /></svg><span><b>WhatsApp</b><small>Om Sai Distributors</small></span></header>
+            <div class="chat">
+              <div class="photo">
+                <div class="doc doc--thermal">
+                  <p class="doc__name">OM SAI DISTRIBUTORS</p>
+                  <p class="doc__meta">Station Rd, Vadodara<br>GSTIN 24AAKFO3381J1Z1</p>
+                  <p class="doc__meta">Bill 7731 · 02/10/26</p>
+                  <table class="doc__t">
+                    <tr><td>Parle-G 800g ×40</td><td>3,400.00</td></tr>
+                    <tr><td>Surf Excel 1kg ×24</td><td>2,832.00</td></tr>
+                    <tr><td>Vim bar 300g ×60</td><td>1,680.00</td></tr>
+                    <tr class="doc__sub"><td>GST 18%</td><td>1,424.16</td></tr>
+                  </table>
+                  <p class="doc__total"><span>TOTAL</span><span>9,336.16</span></p>
+                </div>
+              </div>
+              <p class="chat__time">10:42 am <span aria-label="Read">✓✓</span></p>
+            </div>
+          </article>
+  
+          <!-- Gmail: an email with a PDF tax invoice -->
+          <article class="bill bill--mail" tabindex="0">
+            <header class="bill__src"><svg class="ico ico--gmail" aria-hidden="true"><use href="#i-gmail" /></svg><span><b>Gmail</b><small>billing@kiranfmcg.in</small></span></header>
+            <div class="mail">
+              <p class="mail__subj">Tax invoice KF/2425/1123</p>
+              <p class="mail__att"><span class="mail__pdf">PDF</span>KF-1123.pdf<small>84 KB</small></p>
+              <div class="doc doc--pdf">
+                <p class="doc__name">TAX INVOICE</p>
+                <p class="doc__meta"><b>Kiran FMCG Pvt Ltd</b> · Pune<br>GSTIN 27AAFCK2210M1ZM</p>
+                <table class="doc__t doc__t--grid">
+                  <tr><th>Item</th><th>HSN</th><th>Qty</th><th>Amt</th></tr>
+                  <tr><td>Maggi 70g</td><td>1902</td><td>120</td><td>1,440.00</td></tr>
+                  <tr><td>Red Label 500g</td><td>0902</td><td>20</td><td>4,900.00</td></tr>
+                  <tr><td>Dettol 125ml</td><td>3808</td><td>30</td><td>1,860.00</td></tr>
+                  <tr class="doc__sub"><td colspan="3">IGST 18%</td><td>1,476.00</td></tr>
+                </table>
+                <p class="doc__total"><span>Total</span><span>₹9,676.00</span></p>
+              </div>
+            </div>
+          </article>
+  
+          <!-- Paper: a handwritten kachcha bill -->
+          <article class="bill bill--paper" tabindex="0">
+            <header class="bill__src"><svg class="ico ico--paper" aria-hidden="true"><use href="#i-paper" /></svg><span><b>Paper bill</b><small>Handed over at the counter</small></span></header>
+            <div class="doc doc--hand">
+              <p class="doc__name">Patel Hardware &amp; Paints</p>
+              <p class="doc__meta">Bill no. 341 &nbsp; 3/10/26</p>
+              <ul class="hand">
+                <li><span>PVC pipe 1" — 20 × 85</span><span>1700</span></li>
+                <li><span>Elbow — 40 × 12</span><span>480</span></li>
+                <li><span>Asian Paints 4L — 2 × 1450</span><span>2900</span></li>
+                <li><span>Cement 50kg — 4 × 410</span><span>1640</span></li>
+              </ul>
+              <p class="doc__total hand__total"><span>Total</span><span>6720/-</span></p>
+              <p class="hand__sign">R. Patel</p>
+            </div>
+          </article>
+  
+          <!-- Telegram: a forwarded invoice image -->
+          <article class="bill bill--tg" tabindex="0">
+            <header class="bill__src"><svg class="ico ico--tg" aria-hidden="true"><use href="#i-telegram" /></svg><span><b>Telegram</b><small>Forwarded by Suresh, store</small></span></header>
+            <div class="chat chat--tg">
+              <p class="chat__fwd">Forwarded from Ganesh Electricals</p>
+              <div class="doc doc--clean">
+                <p class="doc__name">Ganesh Electricals</p>
+                <p class="doc__meta">GSTIN 24ABJPG4471K1ZK<br>Inv GE-0518 · 03 Oct 2026</p>
+                <table class="doc__t">
+                  <tr><td>Havells wire 1.5mm ×4</td><td>7,400.00</td></tr>
+                  <tr><td>MCB 16A ×12</td><td>2,520.00</td></tr>
+                  <tr class="doc__sub"><td>CGST 9%</td><td>892.80</td></tr>
+                  <tr class="doc__sub"><td>SGST 9%</td><td>892.80</td></tr>
+                </table>
+                <p class="doc__total"><span>Total</span><span>₹11,705.60</span></p>
+              </div>
+              <p class="chat__time">4:15 pm</p>
+            </div>
+          </article>
+  
+          <!-- Google Drive: a scanned bill in a shared folder -->
+          <article class="bill bill--drive" tabindex="0">
+            <header class="bill__src"><svg class="ico ico--drive" aria-hidden="true"><use href="#i-googledrive" /></svg><span><b>Google Drive</b><small>Purchase bills / October</small></span></header>
+            <div class="drive">
+              <p class="drive__file">scan_0412.pdf</p>
+              <div class="doc doc--scan">
+                <p class="doc__name">SHREE TEXTILES</p>
+                <p class="doc__meta">Ring Road, Surat · GSTIN 24AADFS7782Q1ZD<br>Invoice ST/889 · 04-10-2026</p>
+                <table class="doc__t">
+                  <tr><td>Cotton fabric 120 m</td><td>25,200.00</td></tr>
+                  <tr><td>Lining 80 m</td><td>5,200.00</td></tr>
+                  <tr class="doc__sub"><td>GST 5%</td><td>1,520.00</td></tr>
+                </table>
+                <p class="doc__total"><span>Total</span><span>₹31,920.00</span></p>
+                <span class="stamp">RECEIVED<br>04 OCT</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Product split -->
+    <section class="section section--flush" id="product">
+      <div class="wrap">
+        <div class="product__head">
+          <h2 class="display h2">Your accountant reviews. Parchis does the typing.</h2>
+          <p class="sub">Every bill is read and checked before anyone looks at it. Your accountant only confirms the few fields Parchis isn't sure about.</p>
+        </div>
+
+        <div class="app" role="img" aria-label="Example review screen: a queue of bills, the bill photo with the unclear batch number highlighted, and the extracted fields with that one field waiting for confirmation">
+          <div class="app__bar">
+            <span class="app__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="app__title">Review</span>
+            <span class="app__tabs"><b>Needs review 2</b><span>Ready 35</span><span>Skipped 1</span></span>
+          </div>
+
+          <div class="app__body">
+            <ul class="queue">
+              <li class="is-active"><svg class="ico" aria-hidden="true"><use href="#i-whatsapp" /></svg><span><b>Shree Pharma Agencies</b><small>1 field to check</small></span><em class="qdot qdot--warn"></em></li>
+              <li><svg class="ico" aria-hidden="true"><use href="#i-telegram" /></svg><span><b>Ganesh Electricals</b><small>1 field to check</small></span><em class="qdot qdot--warn"></em></li>
+              <li><svg class="ico" aria-hidden="true"><use href="#i-gmail" /></svg><span><b>Kiran FMCG Pvt Ltd</b><small>₹9,676.00</small></span><em class="qdot"></em></li>
+              <li><svg class="ico" aria-hidden="true"><use href="#i-whatsapp" /></svg><span><b>Om Sai Distributors</b><small>₹9,336.16</small></span><em class="qdot"></em></li>
+              <li><svg class="ico" aria-hidden="true"><use href="#i-googledrive" /></svg><span><b>Shree Textiles</b><small>₹31,920.00</small></span><em class="qdot"></em></li>
+              <li><svg class="ico" aria-hidden="true"><use href="#i-paper" /></svg><span><b>Patel Hardware</b><small>Duplicate, skipped</small></span><em class="qdot qdot--muted"></em></li>
+            </ul>
+
+            <div class="preview">
+              <div class="doc doc--thermal preview__doc">
+                <p class="doc__name">SHREE PHARMA AGENCIES</p>
+                <p class="doc__meta">GSTIN 24AABCS1429B1Z0<br>Inv. SPA/2425/0871 · 04-10-2026</p>
+                <table class="doc__t">
+                  <tr><th>Item</th><th>Batch</th><th>Exp</th><th>Amt</th></tr>
+                  <tr><td>Paracetamol 650 ×10</td><td>PC1180</td><td>03/28</td><td>6,400.00</td></tr>
+                  <tr class="is-hit"><td>Azithro 500 ×3</td><td><span class="smudge">AZ2291</span></td><td>08/27</td><td>7,830.00</td></tr>
+                  <tr><td>ORS sachet ×200</td><td>OR0412</td><td>11/27</td><td>2,500.00</td></tr>
+                  <tr class="doc__sub"><td colspan="3">CGST 6% + SGST 6%</td><td>2,007.60</td></tr>
+                </table>
+                <p class="doc__total"><span>TOTAL</span><span>18,737.60</span></p>
+              </div>
+            </div>
+
+            <div class="fields">
+              <dl>
+                <div><dt>Supplier</dt><dd>Shree Pharma Agencies</dd></div>
+                <div><dt>GSTIN</dt><dd>24AABCS1429B1Z0 <i class="ok">Valid</i></dd></div>
+                <div><dt>Invoice</dt><dd>SPA/2425/0871 · 04 Oct</dd></div>
+                <div><dt>Items</dt><dd>3 · HSN 3004</dd></div>
+              </dl>
+              <div class="ask">
+                <p class="ask__q"><b>Batch, line 2</b> The ink is smudged. Which is it?</p>
+                <div class="ask__opts"><span class="is-pick">AZ2291</span><span>A22291</span></div>
+              </div>
+              <dl>
+                <div><dt>Taxes</dt><dd>₹2,007.60 <i class="ok">Adds up</i></dd></div>
+                <div><dt>GSTR-2B</dt><dd>Matched <i class="ok">Claimable</i></dd></div>
+              </dl>
+              <span class="fields__btn">Confirm and next</span>
+            </div>
+          </div>
+        </div>
+
+        <dl class="traits">
+          <div><svg aria-hidden="true"><use href="#ast" /></svg><dt>Reads every field</dt><dd>Supplier, GSTIN, invoice number, line items, HSN, quantity, rate, taxes, batch and expiry.</dd></div>
+          <div><svg aria-hidden="true"><use href="#ast" /></svg><dt>Asks, never guesses</dt><dd>When something is unclear, Parchis shows the spot on the bill and asks. One tap to confirm.</dd></div>
+          <div><svg aria-hidden="true"><use href="#ast" /></svg><dt>Entered as bills arrive</dt><dd>No month-end pile. Bills are ready the same day suppliers send them.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- Result burst -->
+    <section class="section section--tint burst" id="result">
+      <div class="burst__inner">
+        <svg class="burst__rays" viewBox="-300 -300 600 600" aria-hidden="true">
+          <g filter="url(#brush)">
+            <path d="M 0 -170 L 0 -270" /><path d="M 85 -147 L 140 -238" /><path d="M 147 -85 L 236 -130" />
+            <path d="M 170 0 L 268 6" /><path d="M 147 85 L 230 140" /><path d="M 85 147 L 128 238" />
+            <path d="M 0 170 L 6 272" /><path d="M -85 147 L -136 236" /><path d="M -147 85 L -238 128" />
+            <path d="M -170 0 L -262 -8" /><path d="M -147 -85 L -232 -136" /><path d="M -85 -147 L -132 -240" />
+          </g>
+        </svg>
+        <div class="burst__card">
+          <p class="display burst__quote">Hours of typing become seconds of review.</p>
+          <p class="burst__who">Clean bills go straight through. You only check what Parchis flags.</p>
+        </div>
+        <div class="burst__tab">
+          <span>And no input tax credit lost to typing errors</span>
+          <a href="#trial">Try 20 bills free</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" id="how">
+      <div class="wrap">
+        <h2 class="display h2">Four steps. Your suppliers change nothing.</h2>
+        <div class="pipe" data-pipe>
+          <div class="node node--src">
+            <p class="node__title"><span class="flow__n">1</span>Your channels</p>
+            <ul class="srcgrid">
+              <li data-src="i-whatsapp"><svg class="ico" aria-hidden="true"><use href="#i-whatsapp" /></svg>WhatsApp</li>
+              <li data-src="i-gmail"><svg class="ico" aria-hidden="true"><use href="#i-gmail" /></svg>Email</li>
+              <li data-src="i-telegram"><svg class="ico" aria-hidden="true"><use href="#i-telegram" /></svg>Telegram</li>
+              <li data-src="i-googledrive"><svg class="ico" aria-hidden="true"><use href="#i-googledrive" /></svg>Drive</li>
+              <li data-src="i-paper"><svg class="ico" aria-hidden="true"><use href="#i-paper" /></svg>Paper scan</li>
+              <li data-src="i-upload"><svg class="ico" aria-hidden="true"><use href="#i-upload" /></svg>Upload</li>
+            </ul>
+            <span class="port port--out" aria-hidden="true"></span>
+          </div>
+
+          <div class="wire" aria-hidden="true">
+            <span class="pkt pkt--doc" data-pkt="doc"><svg class="ico"><use href="#i-whatsapp" data-pkt-icon /></svg><span class="pkt__sheet"></span></span>
+          </div>
+
+          <div class="node node--read">
+            <span class="port port--in" aria-hidden="true"></span>
+            <p class="node__title"><span class="flow__n">2</span>Read and check</p>
+            <div class="rd" data-rd>
+              <div class="rd__doc">
+                <p class="rd__name"><span class="hl"></span>Shree Pharma Agencies</p>
+                <p class="rd__line"><span class="hl"></span>GSTIN 24AABCS1429B1Z0</p>
+                <p class="rd__row"><span>Paracetamol ×10</span><span>6,400.00</span></p>
+                <p class="rd__row"><span class="hl hl--warn"></span><span>Azithro · <em>AZ2291</em></span><span>7,830.00</span></p>
+                <p class="rd__row"><span>ORS ×200</span><span>2,500.00</span></p>
+                <p class="rd__row rd__total"><span class="hl"></span><span>Total</span><span>18,737.60</span></p>
+                <i class="rd__beam"></i>
+              </div>
+              <ul class="chips">
+                <li class="chip-ok">GSTIN</li><li class="chip-ok">Tax</li><li class="chip-ok">GSTR-2B</li><li class="chip-warn">Batch</li>
+              </ul>
+            </div>
+            <span class="port port--out" aria-hidden="true"></span>
+          </div>
+
+          <div class="wire" aria-hidden="true">
+            <span class="pkt pkt--data" data-pkt="data">{ }</span>
+          </div>
+
+          <div class="node node--review">
+            <span class="port port--in" aria-hidden="true"></span>
+            <p class="node__title"><span class="flow__n">3</span>You review</p>
+            <dl class="rv" data-rv>
+              <div><dt>Supplier</dt><dd>Shree Pharma</dd></div>
+              <div><dt>GSTIN</dt><dd class="ok">Valid</dd></div>
+              <div><dt>Total</dt><dd>₹18,737.60</dd></div>
+              <div class="rv__flag" data-batch><dt>Batch</dt><dd><span class="opt is-pick" data-pick>AZ2291</span><span class="opt">A22291</span><span class="rv__plain ok">AZ2291</span></dd></div>
+            </dl>
+            <p class="rv__state" data-state><span class="ok">Confirmed</span></p>
+            <span class="port port--out" aria-hidden="true"></span>
+          </div>
+
+          <div class="wire" aria-hidden="true">
+            <span class="pkt pkt--entry" data-pkt="entry">✓</span>
+          </div>
+
+          <div class="node node--dest">
+            <span class="port port--in" aria-hidden="true"></span>
+            <p class="node__title"><span class="flow__n">4</span>Your books</p>
+            <ul class="dlist">
+              <li class="is-on" data-tally translate="no"><span class="mono">T</span><span>Tally Prime</span><i title="Entries synced">✓ <b data-count>36</b></i></li>
+              <li translate="no"><svg class="ico" aria-hidden="true"><use href="#i-zoho" /></svg><span>Zoho Books</span></li>
+              <li translate="no"><span class="mono">B</span><span>Busy</span></li>
+              <li translate="no"><svg class="ico" aria-hidden="true"><use href="#i-googlesheets" /></svg><span>Sheets / Excel</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="duo">
+          <article class="panel">
+            <svg class="chevrons chevrons--accent" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <g filter="url(#brush)">
+                <path d="M 30 250 L 80 300 L 30 350" /><path d="M 70 230 L 125 290 L 75 360" />
+                <path d="M 570 250 L 520 300 L 570 350" /><path d="M 530 230 L 475 290 L 525 360" />
+              </g>
+            </svg>
+            <div class="clients" role="img" aria-label="Example client list for a CA firm">
+              <div class="clients__top"><b>Clients</b><span>October</span></div>
+              <ul>
+                <li><span class="av">MT</span><span><b>Mehta Traders</b><small>Tally Prime</small></span><em>212 bills</em></li>
+                <li><span class="av">RP</span><span><b>Rakesh Pharma</b><small>Marg ERP</small></span><em>604 bills</em></li>
+                <li><span class="av">HK</span><span><b>Hotel Kanha</b><small>Zoho Books</small></span><em>338 bills</em></li>
+                <li><span class="av">SB</span><span><b>Sai Builders</b><small>Busy</small></span><em>97 bills</em></li>
+              </ul>
+            </div>
+            <h3 class="panel__title display">One account for every client's books</h3>
+            <p class="panel__text">CA firms keep each client separate, with its own destination, and handle 50 to 200 clients from one place.</p>
+          </article>
+          <article class="panel">
+            <svg class="chevrons chevrons--alt" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <g filter="url(#brush)">
+                <path d="M 30 250 L 80 300 L 30 350" /><path d="M 70 230 L 125 290 L 75 360" />
+                <path d="M 570 250 L 520 300 L 570 350" /><path d="M 530 230 L 475 290 L 525 360" />
+              </g>
+            </svg>
+            <div class="voucher" role="img" aria-label="Example purchase voucher imported into Tally">
+              <div class="voucher__top"><b>Purchase voucher</b><span>No. 1187</span></div>
+              <dl>
+                <div><dt>Party A/c</dt><dd>Shree Pharma Agencies</dd></div>
+                <div><dt>Purchase 12%</dt><dd>16,730.00</dd></div>
+                <div><dt>Input CGST 6%</dt><dd>1,003.80</dd></div>
+                <div><dt>Input SGST 6%</dt><dd>1,003.80</dd></div>
+                <div class="voucher__total"><dt>Total</dt><dd>18,737.60</dd></div>
+              </dl>
+              <p class="voucher__ok">Imported to Tally Prime · 35 vouchers</p>
+            </div>
+            <h3 class="panel__title display">Straight into Tally, as a real voucher</h3>
+            <p class="panel__text">Ledgers, tax heads and batch details arrive filled in. Nothing to retype, nothing to re-check at month end.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Checks -->
+    <section class="section section--tint" id="checks">
+      <div class="wrap">
+        <div class="product__head">
+          <h2 class="display h2">Checked before it reaches your books</h2>
+          <p class="sub">The mistakes that cost input tax credit are caught at entry, not at filing.</p>
+        </div>
+        <div class="cgrid">
+          <article class="ccard">
+            <div class="ccard__vis" aria-hidden="true">
+              <div class="gst">
+                <p class="gst__row"><span>24AABCS1429B1Z<b>0</b></span><i class="good">✓ Valid</i></p>
+                <p class="gst__row gst__row--bad"><span>24AABCS1429B1Z<b>B</b></span><i class="bad">✗ Typo</i></p>
+              </div>
+            </div>
+            <h3>GSTIN format and checksum</h3>
+            <p>Typos are stopped at the door.</p>
+          </article>
+
+          <article class="ccard">
+            <div class="ccard__vis" aria-hidden="true">
+              <div class="sum">
+                <p><span>Taxable</span><span>16,730.00</span></p>
+                <p><span>CGST 6%</span><span>1,003.80</span></p>
+                <p><span>SGST 6%</span><span>1,003.80</span></p>
+                <p class="sum__total"><span>Bill total</span><span>18,737.60 <i class="good">✓</i></span></p>
+              </div>
+            </div>
+            <h3>Tax math adds up</h3>
+            <p>Every line checked against the total.</p>
+          </article>
+
+          <article class="ccard">
+            <div class="ccard__vis" aria-hidden="true">
+              <div class="dupe">
+                <span class="dupe__bill"><svg class="ico"><use href="#i-whatsapp" /></svg>SPA/0871</span>
+                <span class="dupe__bill"><svg class="ico"><use href="#i-gmail" /></svg>SPA/0871</span>
+                <span class="dupe__arrow"></span>
+                <span class="dupe__one">Entered once</span>
+              </div>
+            </div>
+            <h3>Duplicate invoices</h3>
+            <p>Same bill, two channels, one entry.</p>
+          </article>
+
+          <article class="ccard">
+            <div class="ccard__vis" aria-hidden="true">
+              <div class="match">
+                <div><small>Your bill</small><b>₹18,737.60</b></div>
+                <span class="match__link">=</span>
+                <div><small>GSTR-2B</small><b>₹18,737.60</b></div>
+              </div>
+              <p class="match__ok good">✓ Credit claimable</p>
+            </div>
+            <h3>GSTR-2B match</h3>
+            <p>Matched to your supplier's filing.</p>
+          </article>
+
+          <article class="ccard">
+            <div class="ccard__vis" aria-hidden="true">
+              <div class="batch">
+                <p><span>Paracetamol</span><em>PC1180</em><em>03/28</em></p>
+                <p><span>Azithro 500</span><em>AZ2291</em><em>08/27</em></p>
+                <p><span>ORS sachet</span><em>OR0412</em><em>11/27</em></p>
+              </div>
+            </div>
+            <h3>Batch and expiry, per line</h3>
+            <p>Stock tracking stays accurate.</p>
+          </article>
+
+          <article class="ccard">
+            <div class="ccard__vis" aria-hidden="true">
+              <div class="conf">
+                <p><span>Supplier</span><i style="--v: 99%"></i><b>99%</b></p>
+                <p><span>GSTIN</span><i style="--v: 98%"></i><b>98%</b></p>
+                <p class="conf__low"><span>Batch</span><i style="--v: 62%"></i><b>Review</b></p>
+              </div>
+            </div>
+            <h3>Every field, confidence-scored</h3>
+            <p>Unsure fields go to review, not your books.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Who it's for -->
+    <section class="section" id="who">
+      <div class="wrap">
+        <div class="product__head">
+          <h2 class="display h2">Built for businesses that drown in bills</h2>
+          <p class="sub">Whatever you buy, the bills look like yours. Parchis reads them the way your accountant would.</p>
+        </div>
+        <div class="seg" data-seg>
+          <div class="seg__tabs" role="tablist" aria-label="Business type">
+            <button class="seg__tab" id="tab-ca" role="tab" aria-controls="seg-ca" aria-selected="true" tabindex="0"><svg aria-hidden="true"><use href="#w-ca" /></svg>CA firms</button>
+            <button class="seg__tab" id="tab-dist" role="tab" aria-controls="seg-dist" aria-selected="false" tabindex="-1"><svg aria-hidden="true"><use href="#w-truck" /></svg>Distributors</button>
+            <button class="seg__tab" id="tab-food" role="tab" aria-controls="seg-food" aria-selected="false" tabindex="-1"><svg aria-hidden="true"><use href="#w-food" /></svg>Restaurants</button>
+            <button class="seg__tab" id="tab-clinic" role="tab" aria-controls="seg-clinic" aria-selected="false" tabindex="-1"><svg aria-hidden="true"><use href="#w-clinic" /></svg>Clinics</button>
+            <button class="seg__tab" id="tab-build" role="tab" aria-controls="seg-build" aria-selected="false" tabindex="-1"><svg aria-hidden="true"><use href="#w-build" /></svg>Construction</button>
+          </div>
+          <div class="seg__panel" id="seg-ca" role="tabpanel" aria-labelledby="tab-ca">
+            <div class="seg__copy">
+              <p class="display seg__title">Every client's bills, one account.</p>
+              <ul class="seg__pts"><li><svg aria-hidden="true"><use href="#ast" /></svg>50 to 200 clients from one login</li><li><svg aria-hidden="true"><use href="#ast" /></svg>Separate books for each client</li><li><svg aria-hidden="true"><use href="#ast" /></svg>Each client syncs to its own software</li></ul>
+            </div>
+            <div class="seg__vis">
+              <div class="month" role="img" aria-label="Example: October progress for four clients">
+                <div class="month__top"><b>October close</b><span>4 of 86 clients</span></div>
+                <ul>
+                  <li><span><b>Mehta Traders</b><small>Tally Prime</small></span><i style="--v: 100%"></i><em class="good">212 / 212</em></li>
+                  <li><span><b>Rakesh Pharma</b><small>Marg ERP</small></span><i style="--v: 97%"></i><em>590 / 604</em></li>
+                  <li><span><b>Hotel Kanha</b><small>Zoho Books</small></span><i style="--v: 100%"></i><em class="good">338 / 338</em></li>
+                  <li><span><b>Sai Builders</b><small>Busy</small></span><i style="--v: 82%"></i><em>80 / 97</em></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="seg__panel" id="seg-dist" role="tabpanel" aria-labelledby="tab-dist" hidden>
+            <div class="seg__copy">
+              <p class="display seg__title">Batch and expiry on every line.</p>
+              <ul class="seg__pts"><li><svg aria-hidden="true"><use href="#ast" /></svg>Pharma, FMCG, hardware, electrical, textiles</li><li><svg aria-hidden="true"><use href="#ast" /></svg>Batch and expiry captured per item</li><li><svg aria-hidden="true"><use href="#ast" /></svg>Hundreds of bills, no month-end pile</li></ul>
+            </div>
+            <div class="seg__vis">
+              <div class="sbill" role="img" aria-label="Example bill from Shree Pharma Agencies">
+                <div class="sbill__top"><svg class="ico" aria-hidden="true"><use href="#i-whatsapp" /></svg><span><b>Shree Pharma Agencies</b><small>WhatsApp photo</small></span><i class="good">✓ Ready</i></div>
+                <ul class="lines"><li><span>Paracetamol 650 ×10</span><em>PC1180 · 03/28</em></li><li><span>Azithro 500 ×3</span><em>AZ2291 · 08/27</em></li><li><span>ORS sachet ×200</span><em>OR0412 · 11/27</em></li></ul>
+              </div>
+            </div>
+          </div>
+          <div class="seg__panel" id="seg-food" role="tabpanel" aria-labelledby="tab-food" hidden>
+            <div class="seg__copy">
+              <p class="display seg__title">Daily vendor bills, entered daily.</p>
+              <ul class="seg__pts"><li><svg aria-hidden="true"><use href="#ast" /></svg>Produce, dairy, oil and supplies</li><li><svg aria-hidden="true"><use href="#ast" /></svg>Many small bills every day</li><li><svg aria-hidden="true"><use href="#ast" /></svg>Every vendor's GSTIN checked</li></ul>
+            </div>
+            <div class="seg__vis">
+              <div class="sbill" role="img" aria-label="Example bill from Krishna Vegetable Co.">
+                <div class="sbill__top"><svg class="ico" aria-hidden="true"><use href="#i-paper" /></svg><span><b>Krishna Vegetable Co.</b><small>Paper bill</small></span><i class="good">✓ Ready</i></div>
+                <ul class="lines"><li><span>Tomatoes 40 kg</span><em>₹1,120</em></li><li><span>Paneer 12 kg</span><em>₹3,840</em></li><li><span>Cooking oil 15 L ×4</span><em>₹8,760</em></li></ul>
+              </div>
+            </div>
+          </div>
+          <div class="seg__panel" id="seg-clinic" role="tabpanel" aria-labelledby="tab-clinic" hidden>
+            <div class="seg__copy">
+              <p class="display seg__title">Medicines with expiry, equipment with GST.</p>
+              <ul class="seg__pts"><li><svg aria-hidden="true"><use href="#ast" /></svg>Medicines and consumables</li><li><svg aria-hidden="true"><use href="#ast" /></svg>Expiry dates captured per item</li><li><svg aria-hidden="true"><use href="#ast" /></svg>Equipment bills with the right tax</li></ul>
+            </div>
+            <div class="seg__vis">
+              <div class="sbill" role="img" aria-label="Example bill from Medilink Surgicals">
+                <div class="sbill__top"><svg class="ico" aria-hidden="true"><use href="#i-gmail" /></svg><span><b>Medilink Surgicals</b><small>Email PDF</small></span><i class="good">✓ Ready</i></div>
+                <ul class="lines"><li><span>Syringe 2 ml ×500</span><em>Exp 06/28</em></li><li><span>Nitrile gloves ×20 box</span><em>₹4,600</em></li><li><span>BP monitor ×2</span><em>₹3,980</em></li></ul>
+              </div>
+            </div>
+          </div>
+          <div class="seg__panel" id="seg-build" role="tabpanel" aria-labelledby="tab-build" hidden>
+            <div class="seg__copy">
+              <p class="display seg__title">Site bills, tagged to the site.</p>
+              <ul class="seg__pts"><li><svg aria-hidden="true"><use href="#ast" /></svg>Cement, steel, sand and hire</li><li><svg aria-hidden="true"><use href="#ast" /></svg>Bills from every site in one place</li><li><svg aria-hidden="true"><use href="#ast" /></svg>Each expense tagged to its site</li></ul>
+            </div>
+            <div class="seg__vis">
+              <div class="sbill" role="img" aria-label="Example bill from Om Building Materials">
+                <div class="sbill__top"><svg class="ico" aria-hidden="true"><use href="#i-telegram" /></svg><span><b>Om Building Materials</b><small>Telegram forward</small></span><i class="good">✓ Ready</i></div>
+                <ul class="lines"><li><span>Cement OPC 53 ×120</span><em>Site: Vesu</em></li><li><span>TMT bar 12 mm, 2.4 t</span><em>Site: Adajan</em></li><li><span>River sand 6 brass</span><em>Site: Vesu</em></li></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="section section--tint" id="pricing">
+      <div class="wrap">
+        <h2 class="display h2">Pays for itself in the first month</h2>
+        <p class="sub">If your accountant costs ₹20,000 a month and Parchis saves half their time, that's ₹10,000 back before counting recovered tax credit.</p>
+        <div class="calc" data-calc>
+          <div class="calc__input">
+            <label for="calc-bills">Purchase bills a month</label>
+            <output class="calc__bills display" for="calc-bills" data-out="bills">600</output>
+            <input id="calc-bills" type="range" min="50" max="3000" step="50" value="600" data-range>
+            <div class="calc__scale" aria-hidden="true"><span>50</span><span>1,000</span><span>2,000</span><span>3,000</span></div>
+          </div>
+          <dl class="calc__out" aria-live="polite">
+            <div><dt>Your plan</dt><dd data-out="plan">Business</dd></div>
+            <div><dt>Per month</dt><dd data-out="price">₹2,499</dd></div>
+            <div><dt>Per bill</dt><dd data-out="per">₹4.17</dd></div>
+            <div class="calc__save"><dt>Typing saved</dt><dd data-out="hours">≈ 40 hours</dd></div>
+          </dl>
+        </div>
+
+        <div class="plans">
+          <article class="plan" data-plan="starter">
+            <p class="plan__fit">Fits your volume</p>
+            <h3>Starter</h3>
+            <p class="plan__price"><span class="display">₹999</span> / month</p>
+            <p class="plan__for">Up to 300 bills. For a single shop or small trader.</p>
+            <ul>
+              <li>WhatsApp, email and upload</li>
+              <li>GSTIN and tax checks</li>
+            </ul>
+            <a class="btn btn--ghost" href="#trial">Start with 20 free bills</a>
+          </article>
+          <article class="plan is-fit" data-plan="business">
+            <p class="plan__fit">Fits your volume</p>
+            <h3>Business</h3>
+            <p class="plan__price"><span class="display">₹2,499</span> / month</p>
+            <p class="plan__for">Up to 1,000 bills. For distributors and growing businesses.</p>
+            <ul>
+              <li>All channels</li>
+              <li>GSTR-2B matching</li>
+              <li>Two reviewers</li>
+            </ul>
+            <a class="btn btn--ghost" href="#trial">Start with 20 free bills</a>
+          </article>
+          <article class="plan" data-plan="ca">
+            <p class="plan__fit">Fits your volume</p>
+            <h3>CA firm</h3>
+            <p class="plan__price"><span class="display">₹4,999</span> / month</p>
+            <p class="plan__for">Up to 2,500 bills across clients.</p>
+            <ul>
+              <li>Separate books per client</li>
+              <li>Each client synced to their own destination</li>
+            </ul>
+            <a class="btn btn--ghost" href="#trial">Start with 20 free bills</a>
+          </article>
+        </div>
+        <p class="caption center">Prices exclude GST. Extra bills are ₹3 each.</p>
+      </div>
+    </section>
+
+    <!-- Trial CTA -->
+    <section class="section section--ink" id="trial">
+      <div class="wrap trial">
+        <div class="trial__copy">
+          <h2 class="display h2">Send us 20 bills. Get 20 ready entries back.</h2>
+          <p class="sub">Free, no card. Forward any 20 purchase bills in any format, and see the result before paying anything.</p>
+          <div class="swap" aria-hidden="true">
+            <div class="swap__stack swap__stack--bills">
+              <span></span><span></span><span></span>
+              <b>20</b><small>bills</small>
+            </div>
+            <div class="swap__path"><i></i><em>1 working day</em></div>
+            <div class="swap__stack swap__stack--entries">
+              <span></span><span></span><span></span>
+              <b>20</b><small>entries ✓</small>
+            </div>
+          </div>
+          <ul class="swap__caps">
+            <li>You forward them on WhatsApp or email</li>
+            <li>Checked entries, ready for Tally</li>
+          </ul>
+        </div>
+        <form class="form" data-form novalidate>
+          <div class="form__body">
+            <p class="form__title">Request your free trial</p>
+            <label for="trial-name">Your name</label>
+            <input id="trial-name" name="name" autocomplete="name" required>
+            <label for="trial-phone">WhatsApp number</label>
+            <input id="trial-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="98765 43210…" required>
+            <label for="trial-type">Business type</label>
+            <select id="trial-type" name="type" required>
+              <option value="">Choose one</option>
+              <option>CA firm or bookkeeping agency</option>
+              <option>Pharma distributor</option>
+              <option>Other distributor or wholesaler</option>
+              <option>Restaurant or hotel</option>
+              <option>Clinic or hospital</option>
+              <option>Construction</option>
+              <option>Other</option>
+            </select>
+            <p class="form__error" data-error role="alert"></p>
+            <button class="btn btn--accent" type="submit">Request free trial</button>
+            <p class="form__note">No card. No commitment. We reply on WhatsApp.</p>
+          </div>
+          <div class="form__done" data-done hidden tabindex="-1">
+            <h3>Trial requested</h3>
+            <p>We'll message you on WhatsApp within one working day with where to send your 20 bills.</p>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section section--tint" id="faq">
+      <div class="wrap faq">
+        <div class="faq__side">
+          <h2 class="display h2">Questions</h2>
+          <p class="sub">Short answers for owners and accountants.</p>
+          <div class="faq__nudge">
+            <p>Still unsure? The fastest answer is your own bills.</p>
+            <a class="link-cta" href="#trial">Try 20 bills free</a>
+          </div>
+        </div>
+        <div class="faq__list">
+          <details open>
+            <summary>Does Parchis replace Tally?</summary>
+            <p>No. Parchis feeds Tally and your other accounting software. You keep your books exactly where they are; Parchis only removes the typing.</p>
+          </details>
+          <details>
+            <summary>Do my suppliers need to change anything?</summary>
+            <p>No. They keep sending bills on WhatsApp, email or paper. You connect those channels once.</p>
+          </details>
+          <details>
+            <summary>What happens when a bill is hard to read?</summary>
+            <p>Fields Parchis isn't confident about are flagged for your accountant to confirm. Nothing uncertain is guessed or synced without review.</p>
+          </details>
+          <details>
+            <summary>Can a CA firm keep clients separate?</summary>
+            <p>Yes. Each client has separate books and its own destination, all managed from one account.</p>
+          </details>
+          <details>
+            <summary>Does it handle batch numbers and expiry dates?</summary>
+            <p>Yes. Batch and expiry are captured for every line item, which matters most for pharma distributors and clinics.</p>
+          </details>
+          <details>
+            <summary>What does the free trial include?</summary>
+            <p>We process 20 of your real bills and return them as ready entries. There's no card and no commitment.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <p class="logo" translate="no"><svg class="logo__mark" aria-hidden="true"><use href="#ast" /></svg>Parchis</p>
+          <p class="caption">Parchi: the paper slip every purchase starts with. Parchis turns every one of them into a clean entry.</p>
+        </div>
+        <nav class="footer__cols" aria-label="Footer">
+          <div><p class="footer__h">Product</p><ul><li><a href="#how">How it works</a></li><li><a href="#checks">Checks</a></li><li><a href="#pricing">Pricing</a></li></ul></div>
+          <div><p class="footer__h">Get started</p><ul><li><a href="#trial">Free trial</a></li><li><a href="#faq">Questions</a></li></ul></div>
+          <div><p class="footer__h">Works with</p><ul translate="no"><li>Tally Prime</li><li>Zoho Books</li><li>Busy</li><li>Marg ERP</li></ul></div>
+        </nav>
+      </div>
+      <div class="footer__bottom">
+        <p class="caption">© 2026 Parchis</p>
+        <p class="caption">Made in India</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
