@@ -68,8 +68,9 @@
     <section class="hero" id="top">
       <div class="wrap hero__copy">
         <h1 class="display hero__title" data-split>Never type a purchase bill again.</h1>
-        <svg class="marker" viewBox="0 0 420 22" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M4 15 C 90 6, 200 4, 300 9 S 400 14, 416 8" />
+        <svg class="marker" viewBox="0 0 420 40" preserveAspectRatio="none" aria-hidden="true">
+          <defs><clipPath id="marker-clip"><rect x="0" y="0" width="420" height="40" /></clipPath></defs>
+          <path clip-path="url(#marker-clip)" d="M 3 33 C 50 26, 110 12, 190 9 C 270 6, 330 16, 384 17 C 399 17, 410 11, 418 2 C 420 12, 412 24, 394 29 C 336 33, 272 22, 192 22 C 116 23, 58 33, 10 37 C 4 37, 0 35, 3 33 Z" />
         </svg>
         <p class="lede">WhatsApp photos, email PDFs, paper slips. Parchis collects every purchase bill, checks the GSTIN and tax, and enters it into Tally or your accounting software for you.</p>
         <div class="hero__cta">
@@ -725,7 +726,9 @@
             <li>Checked entries, ready for Tally</li>
           </ul>
         </div>
-        <form class="form" data-form novalidate>
+        <form class="form" name="trial" method="POST" data-netlify="true" netlify-honeypot="company-website" data-form novalidate>
+          <input type="hidden" name="form-name" value="trial">
+          <p class="form__trap" aria-hidden="true"><label>Leave this empty <input name="company-website" tabindex="-1" autocomplete="off"></label></p>
           <div class="form__body">
             <p class="form__title">Request your free trial</p>
             <label for="trial-name">Your name</label>

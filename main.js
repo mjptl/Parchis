@@ -20,13 +20,19 @@
     if (!ticking) { requestAnimationFrame(onScroll); ticking = true; }
   }, { passive: true });
 
-  // Trial form: client-side validation and confirmation.
-  // TODO: send the data to your backend or CRM before showing the confirmation.
+  // Trial form: validate, then submit to Netlify Forms. The confirmation shows only after it is received.
   const form = document.querySelector('[data-form]');
   const error = form.querySelector('[data-error]');
-  form.addEventListener('submit', (e) => {
+  const submit = form.querySelector('button[type="submit"]');
+  const showDone = () => {
+    form.querySelector('.form__body').hidden = true;
+    const done = form.querySelector('[data-done]');
+    done.hidden = false;
+    done.focus();
+  };
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const fields = [...form.querySelectorAll('input, select')];
+    const fields = [...form.querySelectorAll('[required]')];
     fields.forEach((f) => f.removeAttribute('aria-invalid'));
     const phone = form.elements.phone;
     const digits = phone.value.replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '');
@@ -43,10 +49,25 @@
     }
     error.textContent = message;
     if (message) return;
-    form.querySelector('.form__body').hidden = true;
-    const done = form.querySelector('[data-done]');
-    done.hidden = false;
-    done.focus();
+
+    // Preview copies of the page have nowhere to send to.
+    if (form.dataset.preview) { showDone(); return; }
+
+    submit.disabled = true;
+    submit.textContent = 'Sending…';
+    try {
+      const res = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(new FormData(form)).toString(),
+      });
+      if (!res.ok) throw new Error(res.status);
+      showDone();
+    } catch {
+      error.textContent = "Couldn't send your request. Check your connection and try again.";
+      submit.disabled = false;
+      submit.textContent = 'Request free trial';
+    }
   });
 
   // Destination strip: roll through the software names and light the matching tile.
@@ -142,13 +163,14 @@
     .map((w) => `<span class="w" aria-hidden="true">${w}</span>`)
     .join(' ');
 
-  const marker = drawable(document.querySelector('.marker path'));
+  const markerClip = document.querySelector('#marker-clip rect');
+  gsap.set(markerClip, { attr: { width: 0 } });
   const ribbon = drawable(document.querySelector('.ribbon path'));
   const fields = gsap.utils.toArray('[data-demo="f"]');
 
   const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
   tl.from('.hero__title .w', { yPercent: 40, opacity: 0, duration: 0.7, stagger: 0.06 })
-    .to(marker, { strokeDashoffset: 0, duration: 0.6, ease: 'power2.inOut' }, '-=0.2')
+    .to(markerClip, { attr: { width: 420 }, duration: 0.7, ease: 'power2.inOut' }, '-=0.2')
     .from(['.lede', '.hero__cta'], { y: 12, opacity: 0, duration: 0.5, stagger: 0.08 }, '-=0.3')
     .to(ribbon, { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut' }, '-=0.4')
     .from('[data-demo="slip"]', { x: -24, opacity: 0, duration: 0.7 }, '<0.2')
